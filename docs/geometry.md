@@ -1,17 +1,15 @@
 # Fundamentos geométricos
 
-## Convención de unidades
+## Unidades
 
-Los parámetros académicos se expresan en milímetros. Three.js usa unidades de escena adimensionales; la conversión predeterminada utiliza `1 m = 1000 mm`, con factor configurable `0.001`.
-
-## Sección y barras
-
-La sección se representa como un rectángulo centrado en el origen. Los puntos longitudinales son simétricos respecto a los ejes horizontal y vertical. El recubrimiento y el diámetro deben reducir el espacio disponible para evitar barras fuera de la sección.
+Los parámetros y las dimensiones de la ficha están en milímetros. Las fábricas convierten a metros al construir las mallas. La longitud del concreto proviene de la dimensión del elemento, la de la barra se obtiene entre los extremos del cilindro y la del estribo sigue el perímetro de su eje.
 
 ## Distribución
 
-Para cuatro barras se usan las esquinas interiores. Para otras cantidades se genera una cuadrícula acotada por el centro de sección. Es una distribución ilustrativa, no una disposición normativa.
+Las barras de la viga se reparten uniformemente en las capas superior e inferior. Una barra única se centra en su capa. En la columna, cuatro barras ocupan los vértices del rectángulo interior definido por el recubrimiento, el diámetro del estribo y el radio de la barra. Las barras adicionales se asignan al lado que conserve la mayor distancia entre centros tras incorporarlas. En caso de empate se sigue el orden perimetral desde la esquina de coordenadas locales X y Z negativas, avanzando primero en X positivo. Cada lado se subdivide uniformemente y los vértices se cuentan una sola vez.
 
-## Distancia
+La distribución es una convención del modelo académico. El generador exige espacio físico para los diámetros y limita cada conteo a 1000. El análisis de la escena aplica por separado el umbral configurable de separación libre entre barras.
 
-La detección calcula la menor distancia entre segmentos representados por dos extremos. Intersección exacta se traduce a distancia cero. El umbral mínimo es configurable.
+## JSON de demostración
+
+[`union-demostracion.json`](../public/models/union-demostracion.json) contiene datos sintéticos basados en la unión inicial del visor. Cambia el ancho de viga a 320 mm y los conteos de viga y columna para demostrar la importación. El ejemplo usa milímetros y se proporciona como dato de demostración académica.

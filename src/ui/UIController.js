@@ -32,6 +32,7 @@ export class UIController {
       <input id="json-file-input" type="file" accept=".json,application/json" hidden>`;
     this.parameterPanel.render(document.querySelector('#left-panel'));
     this.propertiesPanel.render(document.querySelector('#right-panel'));
+    document.querySelector('#show-all-properties').addEventListener('click', () => this.actions.showAll());
     this.toolbar.render(document.querySelector('#scene-toolbar'));
     this.validationPanel.render(document.querySelector('#validation-panel'));
     const media = matchMedia('(max-width: 760px)');
@@ -67,6 +68,7 @@ export class UIController {
   openJSONPicker() { document.querySelector('#json-file-input')?.click(); }
   updateModel(modelRoot) { this.propertiesPanel.update(modelRoot); }
   bindSelection(modelRoot, selectionManager) {
+    this.propertiesPanel.clearSelection = () => selectionManager.clear();
     document.querySelector('#scene-tree')?.addEventListener('click', (event) => {
       const button = event.target.closest('[data-node]');
       if (!button) return;

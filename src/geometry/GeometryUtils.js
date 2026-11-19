@@ -6,6 +6,7 @@ export function mmToScene(value) {
 }
 
 export function makeEntity(object, entity) {
+  // Dimensions in entity metadata are in millimeters; positions use scene units.
   object.userData.entity = {
     id: entity.id,
     elementId: entity.elementId,

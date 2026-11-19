@@ -1,0 +1,173 @@
+[
+  {
+    "file": "solido.json.gz",
+    "scene": {
+      "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "viewport": [
+        1440,
+        900
+      ],
+      "canvas": [
+        920,
+        756
+      ],
+      "cameraPosition": [
+        4.320000000000002,
+        2.88,
+        4.920000000000001
+      ],
+      "cameraTarget": [
+        0,
+        0,
+        0
+      ],
+      "objects": "59 objetos",
+      "mode": "solid",
+      "xrayOpacity": 35,
+      "exploded": false,
+      "lighting": "Estudio",
+      "selectedId": null,
+      "visibility": {},
+      "model": "joint"
+    },
+    "draws": 120,
+    "drawCommands": {
+      "drawElements": 118,
+      "drawArrays": 2
+    },
+    "analyses": [
+      {
+        "analyserName": "Commands",
+        "uniformMatrix4fv": 187,
+        "bindVertexArray": 120,
+        "drawElements": 118,
+        "uniform1f": 12,
+        "uniform3f": 6,
+        "useProgram": 3,
+        "bindFramebuffer": 2,
+        "clear": 2,
+        "clearColor": 2,
+        "drawArrays": 2,
+        "frontFace": 2,
+        "scissor": 2,
+        "uniformMatrix3fv": 2,
+        "viewport": 2
+      },
+      {
+        "analyserName": "CommandsSummary",
+        "total": 462,
+        "draw": 120,
+        "clear": 2
+      },
+      {
+        "analyserName": "Primitives",
+        "total": 147498,
+        "triangles": 147408,
+        "triangleStrip": 0,
+        "triangleFan": 0,
+        "lines": 90,
+        "lineStrip": 0,
+        "lineLoop": 0,
+        "points": 0
+      }
+    ],
+    "piece": {
+      "id": 207,
+      "marker": "V-01-concrete",
+      "name": "drawElements",
+      "arguments": [
+        4,
+        36,
+        5123,
+        0
+      ]
+    }
+  },
+  {
+    "file": "xray.json.gz",
+    "scene": {
+      "browser": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36 Edg/157.0.0.0",
+      "viewport": [
+        1440,
+        900
+      ],
+      "canvas": [
+        920,
+        756
+      ],
+      "cameraPosition": [
+        4.320000000000002,
+        2.88,
+        4.920000000000001
+      ],
+      "cameraTarget": [
+        0,
+        0,
+        0
+      ],
+      "objects": "59 objetos",
+      "mode": "xray",
+      "xrayOpacity": 35,
+      "exploded": false,
+      "lighting": "Estudio",
+      "selectedId": null,
+      "visibility": {},
+      "model": "joint"
+    },
+    "draws": 120,
+    "drawCommands": {
+      "drawElements": 118,
+      "drawArrays": 2
+    },
+    "analyses": [
+      {
+        "analyserName": "Commands",
+        "uniformMatrix4fv": 187,
+        "bindVertexArray": 120,
+        "drawElements": 118,
+        "uniform1f": 8,
+        "uniform3f": 4,
+        "useProgram": 4,
+        "bindFramebuffer": 2,
+        "clear": 2,
+        "clearColor": 2,
+        "depthMask": 2,
+        "drawArrays": 2,
+        "frontFace": 2,
+        "scissor": 2,
+        "uniformMatrix3fv": 2,
+        "viewport": 2,
+        "disable": 1,
+        "enable": 1
+      },
+      {
+        "analyserName": "CommandsSummary",
+        "total": 461,
+        "draw": 120,
+        "clear": 2
+      },
+      {
+        "analyserName": "Primitives",
+        "total": 147498,
+        "triangles": 147408,
+        "triangleStrip": 0,
+        "triangleFan": 0,
+        "lines": 90,
+        "lineStrip": 0,
+        "lineLoop": 0,
+        "points": 0
+      }
+    ],
+    "piece": {
+      "id": 459,
+      "marker": "V-01-concrete",
+      "name": "drawElements",
+      "arguments": [
+        4,
+        36,
+        5123,
+        0
+      ]
+    }
+  }
+]

@@ -14,7 +14,7 @@ Ejecutar `npm run dev`, abrir la aplicación y mantener visible la consola.
 6. Ejecutar el despiece y restaurarlo.
 7. Mostrar el análisis de separación y explicar que no constituye certificación.
 8. Abrir Spector.js y capturar al menos una escena opaca y una transparente.
-9. Explicar el recurso externo pendiente y su carga local.
+9. Importar `public/models/external/Box.glb` y mostrar su procedencia y licencia.
 
 ## Cierre
 

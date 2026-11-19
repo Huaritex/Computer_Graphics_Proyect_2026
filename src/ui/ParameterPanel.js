@@ -54,6 +54,10 @@ export class ParameterPanel {
                 <label>${type === 'beam' ? 'Longitud' : 'Altura'} (mm)<input id="${type}-length" type="number" min="1"></label>
                 <label>Recubrimiento (mm)<input id="${type}-cover" type="number" min="0"></label>
                 <label>Diám. barras (mm)<input id="${type}-rebar" type="number" min="1"></label>
+                ${type === 'beam'
+                  ? `<label>Barras superiores<input id="beam-top-count" type="number" min="1" step="1"></label>
+                     <label>Barras inferiores<input id="beam-bottom-count" type="number" min="1" step="1"></label>`
+                  : `<label>Barras longitudinales<input id="column-longitudinal-count" type="number" min="4" step="1"></label>`}
                 <label>Diám. estribo (mm)<input id="${type}-stirrup" type="number" min="1"></label>
                 <label>Paso de estribos (mm)<input id="${type}-spacing" type="number" min="1"></label>
               </div>
@@ -104,7 +108,12 @@ export class ParameterPanel {
           width: value('width'), depth: value('depth'),
           [member === 'beam' ? 'length' : 'height']: value('length'),
           cover: value('cover'),
-          rebar: { diameter: value('rebar'), longitudinalCount: 4, topCount: 3, bottomCount: 3 },
+          rebar: {
+            diameter: value('rebar'),
+            ...(member === 'beam'
+              ? { topCount: value('top-count'), bottomCount: value('bottom-count') }
+              : { longitudinalCount: value('longitudinal-count') }),
+          },
           stirrup: { diameter: value('stirrup'), spacing: value('spacing') },
         };
       };
@@ -126,6 +135,9 @@ export class ParameterPanel {
         width: data.width, depth: data.depth, length: member === 'beam' ? data.length : data.height,
         cover: data.cover, rebar: data.rebar?.diameter, stirrup: data.stirrup?.diameter,
         spacing: data.stirrup?.spacing,
+        ...(member === 'beam'
+          ? { 'top-count': data.rebar?.topCount, 'bottom-count': data.rebar?.bottomCount }
+          : { 'longitudinal-count': data.rebar?.longitudinalCount }),
       };
       for (const [field, value] of Object.entries(values)) {
         if (value !== undefined) this.container.querySelector(`#${member}-${field}`).value = value;

@@ -10,7 +10,7 @@ export class CameraInteraction {
     const position = positions[preset] || positions.perspective;
     gsap.to(this.cameraManager.camera.position, {
       x: position[0], y: position[1], z: position[2], duration: 0.55,
-      ease: 'power2.inOut', onUpdate: () => this.cameraManager.controls.update(),
+      ease: 'power2.inOut', overwrite: true, onUpdate: () => this.cameraManager.controls.update(),
     });
   }
   focusPoint(point) {

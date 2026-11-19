@@ -12,18 +12,19 @@ export class JointGenerator {
   }
 
   generate(input = {}) {
+    const id = input.id ?? 'J-01';
     const data = this.processor.processJoint({
-      id: input.id,
+      id,
       type: 'beam-column-joint',
-      beam: input.beam || {},
-      column: input.column || {},
+      beam: { id: `${id}-beam`, ...input.beam },
+      column: { id: `${id}-column`, ...input.column },
     });
     const group = new THREE.Group();
     group.name = data.id || 'beam-column-joint';
     group.userData.element = data;
 
-    const column = this.columnGenerator.generate({ id: `${data.id}-column`, ...data.column });
-    const beam = this.beamGenerator.generate({ id: `${data.id}-beam`, ...data.beam });
+    const column = this.columnGenerator.generate(data.column);
+    const beam = this.beamGenerator.generate(data.beam);
     beam.position.set(0, mmToScene(data.column.height / 2), 0);
     group.add(column);
     group.add(beam);

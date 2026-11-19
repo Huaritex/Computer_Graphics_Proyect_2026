@@ -23,7 +23,7 @@ El visor genera vigas, columnas y uniones parametrizadas con Three.js. Incluye s
 
 ## Recursos externos
 
-No se incluye ni se afirma la existencia de un GLB real. Coloque un recurso licenciado en `public/models/external/` o seleccione uno desde el cargador de la interfaz. Véase [public/models/external/README.md](public/models/external/README.md).
+Para probar **Importar 3D**, selecciona el cubo de Cesium incluido en [public/models/external/](public/models/external/README.md). Para probar **Importar JSON**, usa la [unión de demostración](public/models/union-demostracion.json).
 
 ## Documentación
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { DEFAULT_MATERIALS, MM_TO_M } from '../config/constants.js';
 import { alignCylinderAlong, makeEntity, mmToScene } from './GeometryUtils.js';
+import { columnBarLayout } from '../structural/columnBarLayout.js';
 
 export class RebarFactory {
   constructor(materialOptions = {}) {
@@ -69,18 +70,12 @@ export class RebarFactory {
     const count = data.rebar?.longitudinalCount ?? 4;
     const cover = data.cover ?? 40;
     const halfHeight = mmToScene(data.height - 2 * cover) / 2;
-    const halfWidth = mmToScene(data.width) / 2;
-    const halfDepth = mmToScene(data.depth) / 2;
-    const insetX = halfWidth - mmToScene(cover + (data.stirrup?.diameter ?? 10) + diameter / 2);
-    const insetZ = halfDepth - mmToScene(cover + (data.stirrup?.diameter ?? 10) + diameter / 2);
-    const corners = [
-      [-insetX, -insetZ], [insetX, -insetZ],
-      [insetX, insetZ], [-insetX, insetZ],
-    ];
-    for (let i = 0; i < count; i++) {
-      const corner = corners[i % 4];
-      const start = new THREE.Vector3(corner[0], -halfHeight, corner[1]);
-      const end = new THREE.Vector3(corner[0], halfHeight, corner[1]);
+    const inset = cover + (data.stirrup?.diameter ?? 10) + diameter / 2;
+    const positions = columnBarLayout(data.width - 2 * inset, data.depth - 2 * inset, diameter, count);
+    if (!positions) throw new Error('longitudinalCount no cabe en la sección de columna');
+    for (const [i, [x, z]] of positions.entries()) {
+      const start = new THREE.Vector3(mmToScene(x), -halfHeight, mmToScene(z));
+      const end = new THREE.Vector3(mmToScene(x), halfHeight, mmToScene(z));
       group.add(this.createBar(start, end, {
         diameter,
         id: `${elementId}-longitudinal-${i + 1}`,

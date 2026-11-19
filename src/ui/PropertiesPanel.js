@@ -4,7 +4,7 @@ export class PropertiesPanel {
   constructor(state) { this.state = state; }
   render(container) {
     container.innerHTML = `
-      <div class="panel-heading"><span>Propiedades</span><button class="icon-button" id="show-all" title="Mostrar todo" aria-label="Mostrar todos los componentes">◉</button></div>
+      <div class="panel-heading"><span>Propiedades</span><button class="icon-button" id="show-all-properties" title="Mostrar todo" aria-label="Mostrar todos los componentes">◉</button></div>
       <div class="panel-scroll">
         <section class="control-section"><h3>Interferencias y separación</h3><div id="interference-list" class="interference-list"><p class="muted">Sin análisis disponible</p></div></section>
         <section class="control-section"><h3>Jerarquía del modelo</h3><div id="scene-tree" class="scene-tree"></div></section>
@@ -13,28 +13,17 @@ export class PropertiesPanel {
   update(modelRoot) {
     const tree = document.querySelector('#scene-tree');
     if (!tree) return;
-    const selectedId = this.state.get('selectedId');
     const selectedObjectId = this.state.get('selectedObjectId');
     const nodes = [];
     modelRoot.traverse((object) => {
       if (!object.parent || (!object.isMesh && object.type !== 'Group')) return;
-      const id = object.userData.entity?.id || object.userData.partId || object.name || object.uuid;
       const depth = this.depth(object);
-      nodes.push(`<button class="tree-node ${selectedId === id || selectedObjectId === object.uuid ? 'active' : ''}" data-node="${object.uuid}" style="padding-left:${8 + depth * 10}px">
-        <span class="${object.visible ? 'dot-on' : 'dot-off'}"></span>${escapeHTML(object.name || (object.isMesh ? 'Pieza' : 'Grupo'))}
+      nodes.push(`<button class="tree-node ${selectedObjectId === object.uuid ? 'active' : ''}" data-node="${object.uuid}" style="padding-left:${8 + depth * 10}px">
+        <span class="${this.isVisible(object) ? 'dot-on' : 'dot-off'}"></span>${escapeHTML(object.name || (object.isMesh ? 'Pieza' : 'Grupo'))}
       </button>`);
     });
     tree.innerHTML = nodes.join('') || '<p class="muted">No hay modelo cargado</p>';
-    this.bindTreeNodes(modelRoot);
     this.renderInspector(modelRoot);
-  }
-  bindTreeNodes(modelRoot) {
-    document.querySelectorAll('[data-node]').forEach((button) => {
-      button.addEventListener('click', () => {
-        const object = modelRoot.getObjectByProperty('uuid', button.dataset.node);
-        if (object) this.state.set({ selectedId: object.userData.element?.id || object.userData.entity?.elementId || object.userData.entity?.id || object.name, selectedObjectId: object.uuid });
-      });
-    });
   }
   renderInspector(modelRoot) {
     const id = this.state.get('selectedObjectId');
@@ -53,7 +42,7 @@ export class PropertiesPanel {
     card.innerHTML = `<header class="inspector-header"><div><span class="inspector-kicker">INSPECCIÓN ESTRUCTURAL</span><h2>${escapeHTML(details.title)}</h2><p>${escapeHTML(details.subtitle)}</p></div><button type="button" class="inspector-close" aria-label="Cerrar detalles">×</button></header>
       <div class="inspector-body"><div class="inspector-summary"><span><small>Identificador</small><strong>${escapeHTML(details.id)}</strong></span><span><small>Tipo</small><strong>${escapeHTML(details.kind)}</strong></span></div>
       ${details.sections.map(section => `<section class="inspector-section"><h3>${escapeHTML(section.title)}</h3><dl>${section.rows.map(([label, value]) => `<div><dt>${escapeHTML(label)}</dt><dd>${escapeHTML(value)}</dd></div>`).join('')}</dl></section>`).join('')}</div>`;
-    card.querySelector('.inspector-close')?.addEventListener('click', () => this.state.set({ selectedId: null, selectedObjectId: null }));
+    card.querySelector('.inspector-close')?.addEventListener('click', () => this.clearSelection());
   }
   findOwner(object, root) {
     let current = object;
@@ -86,12 +75,12 @@ export class PropertiesPanel {
       const transverse = member.stirrup || {};
       const rows = [];
       if (longitudinal.diameter != null) rows.push(['Diámetro longitudinal', `Ø${longitudinal.diameter} mm`]);
-      if (longitudinal.topCount != null || longitudinal.bottomCount != null) {
+      if (member.type === 'beam') {
         rows.push(['Barras superiores', `${longitudinal.topCount ?? 0}`]);
         rows.push(['Barras inferiores', `${longitudinal.bottomCount ?? 0}`]);
         rows.push(['Total longitudinal', `${Number(longitudinal.topCount ?? 0) + Number(longitudinal.bottomCount ?? 0)} barras`]);
       }
-      if (longitudinal.longitudinalCount != null) rows.push(['Barras longitudinales', `${longitudinal.longitudinalCount}`]);
+      if (member.type === 'column') rows.push(['Barras longitudinales', `${longitudinal.longitudinalCount}`]);
       if (transverse.diameter != null) rows.push(['Diámetro de estribo', `Ø${transverse.diameter} mm`]);
       if (transverse.spacing != null) rows.push(['Separación de estribos', `${transverse.spacing} mm`]);
       if (rows.length) sections.push({ title: label, rows });
@@ -108,11 +97,17 @@ export class PropertiesPanel {
       ['Material / función', kindLabels[entity.kind] || selected.type],
       ['Diámetro', entity.diameter != null ? `Ø${entity.diameter} mm` : 'No aplica'],
       ['Longitud de pieza', Number.isFinite(entity.length) ? `${Number(entity.length).toFixed(0)} mm` : 'No disponible'],
-      ['Estado', selected.visible ? 'Visible' : 'Oculto'],
+      ['Estado', this.isVisible(selected) ? 'Visible' : 'Oculto'],
     ];
     if (!isJoint && !element?.type) instanceRows.push(['Geometría', 'Modelo importado; los parámetros estructurales no están disponibles']);
     sections.push({ title: 'Pieza seleccionada', rows: instanceRows });
     return { title, id: entity.id || element?.id || selected.name || '—', kind: isJoint ? 'Unión viga-columna' : (element?.type === 'beam' ? 'Viga' : element?.type === 'column' ? 'Columna' : kindLabels[entity.kind] || selected.type), subtitle: isJoint ? 'Conjunto estructural · dimensiones en mm' : `${entity.elementId || title} · dimensiones en mm`, sections };
+  }
+  isVisible(object) {
+    for (let current = object; current; current = current.parent) {
+      if (!current.visible) return false;
+    }
+    return true;
   }
   depth(object) { let d = 0; while (object.parent && object.parent.type !== 'Scene') { d++; object = object.parent; } return d; }
   updateWarnings(collisions, threshold, cameraInteraction) {

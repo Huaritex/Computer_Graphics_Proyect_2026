@@ -45,7 +45,12 @@ export class SceneManager {
     return this.createStructural('joint');
   }
   createStructural(type = 'joint', parameters = {}) {
+    const assembly = this.buildStructural(type, parameters);
     this.clearModel();
+    this.modelRoot.add(assembly);
+    return assembly;
+  }
+  buildStructural(type, parameters) {
     let assembly;
     if (type === 'beam') assembly = new BeamGenerator().generate(parameters);
     else if (type === 'column') assembly = new ColumnGenerator().generate(parameters);
@@ -56,7 +61,6 @@ export class SceneManager {
         object.receiveShadow = true;
       }
     });
-    this.modelRoot.add(assembly);
     return assembly;
   }
 }

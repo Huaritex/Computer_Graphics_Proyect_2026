@@ -1,0 +1,25 @@
+{
+  "id": "J-DEMO",
+  "type": "beam-column-joint",
+  "units": "mm",
+  "beam": {
+    "id": "V-01",
+    "type": "beam",
+    "width": 320,
+    "depth": 500,
+    "length": 4000,
+    "cover": 40,
+    "rebar": { "diameter": 16, "topCount": 4, "bottomCount": 3 },
+    "stirrup": { "diameter": 10, "spacing": 150 }
+  },
+  "column": {
+    "id": "C-01",
+    "type": "column",
+    "width": 400,
+    "depth": 400,
+    "height": 3000,
+    "cover": 40,
+    "rebar": { "diameter": 16, "longitudinalCount": 8 },
+    "stirrup": { "diameter": 10, "spacing": 150 }
+  }
+}

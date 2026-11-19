@@ -26,7 +26,7 @@ export class ConcreteFactory {
       elementId: elementId || mesh.name,
       kind: 'concrete',
       position: mesh.position.clone(),
-      length: mmToScene(height),
+      length: height,
     });
   }
 
@@ -43,7 +43,7 @@ export class ConcreteFactory {
       elementId: data.id,
       kind: 'concrete',
       position: mesh.position.clone(),
-      length: mmToScene(data.length),
+      length: data.length,
     });
   }
 

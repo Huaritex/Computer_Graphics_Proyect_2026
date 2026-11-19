@@ -15,6 +15,7 @@ export class ParameterProcessor {
     const result = { ...typeDefaults, ...input };
     result.cover = result.cover ?? typeDefaults.cover ?? this.defaults.column.cover;
     result.rebar = { ...this.defaults.rebar, ...(input.rebar || {}) };
+    result.rebar.diameter = input.rebar?.diameter ?? input.rebar?.longitudinalDiameter ?? this.defaults.rebar.diameter;
     result.stirrup = { ...this.defaults.stirrup, ...(input.stirrup || {}) };
 
     for (const key of ['width', 'depth', 'length', 'height', 'cover']) {

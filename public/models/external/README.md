@@ -1,16 +1,7 @@
-# Recursos externos GLB/GLTF
+# Modelo externo GLB
 
-No hay actualmente ningún modelo GLB real en este directorio. No se descargó ni incluyó un recurso sin verificar origen, licencia y integridad.
+[Box.glb](Box.glb) es el cubo de prueba del repositorio glTF Sample Assets de Khronos. Autor y titular: Cesium, © 2017. Se redistribuye sin modificaciones bajo [CC BY 4.0 Internacional](https://creativecommons.org/licenses/by/4.0/). [Ficha original y atribución](https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/Box).
 
-## Requisito pendiente
+Para probar la carga local, selecciona `Box.glb` en **Importar 3D**. El archivo contiene una malla y un material, con sus datos incluidos en el propio GLB.
 
-Agregar un archivo `.glb` o `.gltf` licenciado, junto con sus texturas y archivos `.bin` si corresponde. El proveedor debe permitir explícitamente redistribución o uso académico y debe facilitar licencia, autor y URL de procedencia.
-
-## Convenciones previstas
-
-- Mantener rutas relativas para que el modelo cargue en el servidor Vite.
-- Registrar nombre original, autor, URL, licencia y fecha de obtención.
-- Comprobar virus, tamaño y integridad antes de publicar.
-- No incluir metadatos privados ni archivos con licencia desconocida.
-
-El cargador de GLTF y el control de archivo deben aceptar únicamente recursos seleccionados por el usuario o colocados deliberadamente aquí. Hasta que exista el recurso aprobado, el estado permanece como pendiente documentado.
+SHA-256: `ed52f7192b8311d700ac0ce80644e3852cd01537e4d62241b9acba023da3d54e`.

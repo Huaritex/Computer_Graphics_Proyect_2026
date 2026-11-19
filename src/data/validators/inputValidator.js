@@ -1,4 +1,7 @@
-import structuralSchema from '../structuralSchema.js';
+import { DEFAULTS } from '../../config/defaults.js';
+import { barIntervals } from '../../structural/columnBarLayout.js';
+
+export const isRecord = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function isFinitePositive(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0;
@@ -6,10 +9,11 @@ function isFinitePositive(value) {
 
 export function validateInput(input) {
   const errors = [];
-  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+  if (!isRecord(input)) {
     return { valid: false, errors: ['Input must be an object'] };
   }
-  if (!input.id) errors.push('id is required');
+  if (typeof input.id !== 'string' || !input.id.trim()) errors.push('id debe ser un texto no vacío');
+  if (input.units !== undefined && input.units !== 'mm') errors.push('units debe ser mm');
   if (!input.type) errors.push('type is required');
   if (input.type && !['beam', 'column', 'beam-column-joint'].includes(input.type)) {
     errors.push(`Unsupported structural type: ${input.type}`);
@@ -24,34 +28,59 @@ export function validateInput(input) {
       if (!isFinitePositive(input[key])) errors.push(`${key} must be a positive number`);
     }
   } else if (input.type === 'beam-column-joint') {
-    if (!input.beam || typeof input.beam !== 'object') errors.push('beam is required');
-    if (!input.column || typeof input.column !== 'object') errors.push('column is required');
     for (const [key, type] of [['beam', 'beam'], ['column', 'column']]) {
-      if (input[key] && typeof input[key] === 'object') {
-        errors.push(...validateInput({ ...input[key], id: input[key].id || key, type }).errors.map(error => key + ': ' + error));
+      const member = input[key];
+      if (!isRecord(member)) errors.push(`${key} debe ser un objeto`);
+      else if (member.type !== undefined && member.type !== type) errors.push(`${key}.type debe ser ${type}`);
+      else {
+        errors.push(...validateInput({ id: `${input.id}-${key}`, ...member, type }).errors.map(error => key + ': ' + error));
       }
     }
+    const beamId = input.beam?.id ?? `${input.id}-beam`;
+    const columnId = input.column?.id ?? `${input.id}-column`;
+    if (beamId === columnId) errors.push('beam.id y column.id deben ser distintos');
   }
   if (input.cover !== undefined && (!Number.isFinite(input.cover) || input.cover < 0)) {
     errors.push('cover must be a non-negative number');
   }
   if (input.type === 'beam' || input.type === 'column') {
-    const diameter = input.rebar?.diameter ?? 16;
-    const stirrupDiameter = input.stirrup?.diameter ?? 10;
-    const spacing = input.stirrup?.spacing ?? 150;
-    const cover = input.cover ?? 40;
+    if (input.rebar !== undefined && !isRecord(input.rebar)) errors.push('rebar debe ser un objeto');
+    if (input.stirrup !== undefined && !isRecord(input.stirrup)) errors.push('stirrup debe ser un objeto');
+    const read = (group, key, fallback) => group?.[key] === undefined ? fallback : group[key];
+    const diameter = read(input.rebar, 'diameter', read(input.rebar, 'longitudinalDiameter', DEFAULTS.rebar.diameter));
+    const stirrupDiameter = read(input.stirrup, 'diameter', DEFAULTS.stirrup.diameter);
+    const spacing = read(input.stirrup, 'spacing', DEFAULTS.stirrup.spacing);
+    const cover = input.cover ?? DEFAULTS[input.type].cover;
     if (!isFinitePositive(diameter)) errors.push('El diámetro de barras debe ser positivo');
     if (!isFinitePositive(stirrupDiameter)) errors.push('El diámetro de estribo debe ser positivo');
     if (!isFinitePositive(spacing)) errors.push('La separación de estribos debe ser positiva');
-    if (Number.isFinite(input.width) && Number.isFinite(input.depth) &&
-        2 * (cover + stirrupDiameter + diameter) >= Math.min(input.width, input.depth)) {
+    const inset = cover + stirrupDiameter + diameter / 2;
+    const width = input.width - 2 * inset;
+    const depth = input.depth - 2 * inset;
+    if (width < diameter || depth < diameter) {
       errors.push('El recubrimiento y los diámetros no caben en la sección');
+    }
+    const minimums = { topCount: 1, bottomCount: 1, longitudinalCount: 4 };
+    for (const [key, minimum] of Object.entries(minimums)) {
+      const count = read(input.rebar, key, DEFAULTS.rebar[key]);
+      if (!Number.isInteger(count) || count < minimum || count > 1000) {
+        errors.push(`rebar.${key} debe ser un entero entre ${minimum} y 1000`);
+        continue;
+      }
+      const relevantBeamCount = input.type === 'beam' && key !== 'longitudinalCount';
+      const relevantColumnCount = input.type === 'column' && key === 'longitudinalCount';
+      if ((relevantBeamCount && count > barIntervals(width, diameter) + 1) ||
+          (relevantColumnCount && count > 2 * (barIntervals(width, diameter) + barIntervals(depth, diameter)))) {
+        errors.push(`rebar.${key} no cabe en la sección`);
+      }
     }
     const length = input.type === 'beam' ? input.length : input.height;
     if (Number.isFinite(length) && isFinitePositive(spacing) && length / spacing > 1000) {
       errors.push('La cantidad de estribos supera el límite de 1000');
     }
-    if (Number.isFinite(length) && length <= 2 * cover) errors.push('La longitud debe superar dos veces el recubrimiento');
+    if (Number.isFinite(length) && length < 2 * cover + stirrupDiameter) {
+      errors.push('length / height debe permitir el recubrimiento y el diámetro del estribo');
+    }
   }
   return { valid: errors.length === 0, errors };
 }
