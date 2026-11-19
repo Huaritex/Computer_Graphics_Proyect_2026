@@ -10,7 +10,8 @@ export class ModelLoader {
     const primary = list.find((file) => /\.glb$/i.test(file.name))
       || list.find((file) => /\.gltf$/i.test(file.name));
     if (!primary) throw new Error('Seleccione un archivo .glb o .gltf');
-    const loader = new GLTFLoader();
+    const manager = new THREE.LoadingManager();
+    const loader = new GLTFLoader(manager);
     const urls = new Map();
     list.forEach((file) => {
       const url = URL.createObjectURL(file);
@@ -18,10 +19,10 @@ export class ModelLoader {
       urls.set(file.name, url);
       urls.set(file.name.replace(/^.*[\\/]/, ''), url);
     });
-    loader.resolveResource = (resource) => {
+    manager.setURLModifier((resource) => {
       if (typeof resource !== 'string') return resource;
       return urls.get(resource) || urls.get(resource.replace(/^.*[\\/]/, '')) || resource;
-    };
+    });
     let result;
     if (/\.glb$/i.test(primary.name)) {
       const buffer = await primary.arrayBuffer();

@@ -1,3 +1,5 @@
+import { DEFAULTS } from '../config/defaults.js';
+
 export class ParameterPanel {
   constructor(state, actions) {
     this.state = state;
@@ -5,13 +7,13 @@ export class ParameterPanel {
   }
   render(container) {
     container.innerHTML = `
-      <div class="panel-heading"><span>Parámetros</span><button class="icon-button" title="Contraer">‹</button></div>
+      <div class="panel-heading"><span>Parámetros</span></div>
       <div class="panel-scroll">
         <section class="control-section"><h3>Visualización</h3>
           <div class="segmented three" id="mode-controls">
-            <button data-mode="solid" class="active">Sólido</button>
-            <button data-mode="xray">X-Ray</button>
-            <button data-mode="wireframe">Malla</button>
+            <button data-mode="solid" class="active" aria-pressed="true">Sólido</button>
+            <button data-mode="xray" aria-pressed="false">X-Ray</button>
+            <button data-mode="wireframe" aria-pressed="false">Malla</button>
           </div>
           <label class="range-row"><span>Opacidad X-Ray</span><output id="xray-output">35%</output>
             <input id="xray-opacity" type="range" min="5" max="100" value="35">
@@ -37,29 +39,34 @@ export class ParameterPanel {
           </div>
         </section>
         <section class="control-section"><h3>Iluminación</h3>
-          <select id="lighting-select"><option>Estudio</option><option>Exterior</option><option>Tenue</option></select>
+          <select id="lighting-select" aria-label="Iluminación"><option>Estudio</option><option>Exterior</option><option>Tenue</option></select>
         </section>
         <section class="control-section"><h3>Ejemplos</h3>
           <label for="element-type">Tipo de elemento
             <select id="element-type" name="elementType"><option value="beam">Viga</option><option value="column">Columna</option><option value="joint" selected>Unión viga-columna</option></select>
           </label>
-          <div class="parameter-grid">
-            <label>Ancho (mm)<input id="param-width" type="number" min="100" value="300"></label>
-            <label>Alto/prof. (mm)<input id="param-depth" type="number" min="100" value="500"></label>
-            <label>Longitud/altura (mm)<input id="param-length" type="number" min="500" value="4000"></label>
-            <label>Recubrimiento (mm)<input id="param-cover" type="number" min="10" value="40"></label>
-            <label>Diám. barras (mm)<input id="param-rebar" type="number" min="6" value="16"></label>
-            <label>Diám. estribo (mm)<input id="param-stirrup" type="number" min="6" value="10"></label>
-            <label>Separación (mm)<input id="param-spacing" type="number" min="50" value="150"></label>
-          </div>
+          ${['beam', 'column'].map(type => `
+            <fieldset class="member-fields" data-member="${type}">
+              <legend>${type === 'beam' ? 'Viga' : 'Columna'}</legend>
+              <div class="parameter-grid">
+                <label>Ancho (mm)<input id="${type}-width" type="number" min="1"></label>
+                <label>${type === 'beam' ? 'Peralte' : 'Profundidad'} (mm)<input id="${type}-depth" type="number" min="1"></label>
+                <label>${type === 'beam' ? 'Longitud' : 'Altura'} (mm)<input id="${type}-length" type="number" min="1"></label>
+                <label>Recubrimiento (mm)<input id="${type}-cover" type="number" min="0"></label>
+                <label>Diám. barras (mm)<input id="${type}-rebar" type="number" min="1"></label>
+                <label>Diám. estribo (mm)<input id="${type}-stirrup" type="number" min="1"></label>
+                <label>Paso de estribos (mm)<input id="${type}-spacing" type="number" min="1"></label>
+              </div>
+            </fieldset>`).join('')}
           <button class="wide-button" id="generate-button">Generar modelo</button>
           <button class="wide-button secondary" id="example-button">Escena de unión</button>
           <button class="wide-button secondary" id="clear-button">Limpiar modelo</button>
         </section>
       </div>`;
     container.querySelectorAll('#mode-controls button').forEach((button) => button.addEventListener('click', () => {
-      container.querySelectorAll('#mode-controls button').forEach((item) => item.classList.remove('active'));
+      container.querySelectorAll('#mode-controls button').forEach((item) => { item.classList.remove('active'); item.setAttribute('aria-pressed', 'false'); });
       button.classList.add('active');
+      button.setAttribute('aria-pressed', 'true');
       this.actions.setMode(button.dataset.mode);
     }));
     container.querySelector('#xray-opacity').addEventListener('input', (event) => {
@@ -79,30 +86,67 @@ export class ParameterPanel {
     container.querySelector('#lighting-select').addEventListener('change', (event) => this.actions.setLighting(event.target.value));
     container.querySelector('#example-button').addEventListener('click', () => this.actions.loadExample());
     container.querySelector('#clear-button').addEventListener('click', () => this.actions.clearModel());
+    this.container = container;
+    this.setModel('joint', {
+      beam: { ...DEFAULTS.beam, rebar: DEFAULTS.rebar, stirrup: DEFAULTS.stirrup },
+      column: { ...DEFAULTS.column, rebar: DEFAULTS.rebar, stirrup: DEFAULTS.stirrup },
+    });
+    container.querySelector('#element-type').addEventListener('change', () => this.updateMemberVisibility());
     container.querySelector('#generate-button').addEventListener('click', () => {
       const type = container.querySelector('#element-type').value;
-      const width = Number(container.querySelector('#param-width').value);
-      const depth = Number(container.querySelector('#param-depth').value);
-      const longitudinal = Number(container.querySelector('#param-length').value);
-      const cover = Number(container.querySelector('#param-cover').value);
-      const rebarDiameter = Number(container.querySelector('#param-rebar').value);
-      const stirrupDiameter = Number(container.querySelector('#param-stirrup').value);
-      const spacing = Number(container.querySelector('#param-spacing').value);
-      const element = {
-        id: type === 'beam' ? 'V-01' : type === 'column' ? 'C-01' : 'J-01',
-        type,
-        width,
-        depth,
-        length: type === 'column' ? longitudinal : longitudinal,
-        height: longitudinal,
-        cover,
-        rebar: { diameter: rebarDiameter, longitudinalCount: 4, topCount: 3, bottomCount: 3 },
-        stirrup: { diameter: stirrupDiameter, spacing },
+      const read = (member) => {
+        const value = (field) => {
+          const input = container.querySelector(`#${member}-${field}`);
+          return input.value.trim() === '' ? NaN : Number(input.value);
+        };
+        return {
+          id: member === 'beam' ? 'V-01' : 'C-01', type: member,
+          width: value('width'), depth: value('depth'),
+          [member === 'beam' ? 'length' : 'height']: value('length'),
+          cover: value('cover'),
+          rebar: { diameter: value('rebar'), longitudinalCount: 4, topCount: 3, bottomCount: 3 },
+          stirrup: { diameter: value('stirrup'), spacing: value('spacing') },
+        };
       };
-      const parameters = type === 'joint'
-        ? { beam: { ...element, id: 'V-01', type: 'beam' }, column: { ...element, id: 'C-01', type: 'column' } }
-        : element;
-      this.actions.generateModel(type, parameters);
+      this.actions.generateModel(type, type === 'joint' ? { beam: read('beam'), column: read('column') } : read(type));
     });
+  }
+  updateMemberVisibility() {
+    const type = this.container.querySelector('#element-type').value;
+    this.container.querySelectorAll('[data-member]').forEach(fieldset => {
+      fieldset.hidden = type !== 'joint' && fieldset.dataset.member !== type;
+    });
+  }
+  setModel(type, parameters) {
+    this.container.querySelector('#element-type').value = type;
+    for (const member of ['beam', 'column']) {
+      const data = type === 'joint' ? parameters[member] : type === member ? parameters : null;
+      if (!data) continue;
+      const values = {
+        width: data.width, depth: data.depth, length: member === 'beam' ? data.length : data.height,
+        cover: data.cover, rebar: data.rebar?.diameter, stirrup: data.stirrup?.diameter,
+        spacing: data.stirrup?.spacing,
+      };
+      for (const [field, value] of Object.entries(values)) {
+        if (value !== undefined) this.container.querySelector(`#${member}-${field}`).value = value;
+      }
+    }
+    this.updateMemberVisibility();
+  }
+  sync(state) {
+    const c = this.container;
+    c.querySelectorAll('[data-mode]').forEach(button => {
+      const active = button.dataset.mode === state.mode;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-pressed', String(active));
+    });
+    for (const [id, value] of Object.entries({
+      'xray-opacity': state.xrayOpacity, 'explode-amount': state.explodeAmount,
+      'clearance-threshold': state.clearanceThreshold, 'lighting-select': state.lighting,
+    })) c.querySelector('#' + id).value = value;
+    c.querySelector('#exploded-toggle').checked = state.exploded;
+    c.querySelector('#xray-output').textContent = state.xrayOpacity + '%';
+    c.querySelector('#explode-output').textContent = state.explodeAmount + '%';
+    c.querySelector('#clearance-output').textContent = state.clearanceThreshold + ' mm';
   }
 }

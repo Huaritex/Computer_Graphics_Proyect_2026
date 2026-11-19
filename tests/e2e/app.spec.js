@@ -64,3 +64,35 @@ test.describe('Visualizador paramétrico', () => {
     });
   });
 });
+
+test('conserva los parámetros y el análisis al guardar y restaurar', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('#beam-width')).toHaveValue('300');
+  await expect(page.locator('#column-width')).toHaveValue('400');
+  await page.locator('#beam-width').fill('320');
+  await page.locator('#column-width').fill('450');
+  await page.locator('#generate-button').click();
+  await expect(page.locator('#model-name')).toHaveText('Unión viga-columna');
+  const before = await page.locator('#interference-list').innerText();
+  await page.locator('#exploded-toggle').check();
+  await page.locator('#clearance-threshold').evaluate(input => input.dispatchEvent(new Event('input', { bubbles: true })));
+  expect(await page.locator('#interference-list').innerText()).toBe(before);
+  const downloadPromise = page.waitForEvent('download');
+  await page.locator('#export-json').click();
+  const download = await downloadPromise;
+  const path = await download.path();
+  await page.locator('#beam-width').fill('380');
+  await page.locator('#generate-button').click();
+  await page.locator('#json-file-input').setInputFiles(path);
+  await expect(page.locator('#beam-width')).toHaveValue('320');
+  await expect(page.locator('#column-width')).toHaveValue('450');
+  await expect(page.locator('#exploded-toggle')).toBeChecked();
+});
+
+test('rechaza un paso de estribos vacío sin reemplazar el modelo', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#beam-spacing').fill('');
+  await page.locator('#generate-button').click();
+  await expect(page.locator('#validation-text')).toContainText('separación de estribos');
+  await expect(page.locator('#model-name')).toHaveText('Unión viga-columna');
+});

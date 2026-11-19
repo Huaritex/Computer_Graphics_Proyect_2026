@@ -15,6 +15,7 @@ import { ModelLoader } from '../loaders/ModelLoader.js';
 import { UIController } from '../ui/UIController.js';
 import CollisionDetector from '../structural/CollisionDetector.js';
 import { validateInput } from '../data/validators/inputValidator.js';
+import { DEFAULTS } from '../config/defaults.js';
 
 export class App {
   constructor(root) {
@@ -39,7 +40,8 @@ export class App {
     this.explodedManager = new ExplodedViewManager(this.sceneManager.modelRoot);
     this.cameraInteraction = new CameraInteraction(this.cameraManager);
     this.modelLoader = new ModelLoader(this.resourceManager);
-    this.state.subscribe(() => this.ui.updateModel(this.sceneManager.modelRoot));
+    this.state.subscribe((state) => { this.ui.updateModel(this.sceneManager.modelRoot); this.ui.parameterPanel.sync(state); });
+    this.ui.bindSelection(this.sceneManager.modelRoot, this.selectionManager);
     this.loadExample();
     this.bindResize();
     this.animate();
@@ -70,13 +72,11 @@ export class App {
     };
   }
   loadExample() {
-    const object = this.sceneManager.createStructural('joint');
-    const fit = this.sceneManager.fitObject(object, this.cameraManager.controls);
-    this.cameraManager.fit(fit.radius);
-    this.state.set({ mode: 'solid', modelName: 'Unión viga-columna', exploded: false });
-    this.xrayManager?.setMode('solid');
-    this.updateModelInfo('Unión viga-columna');
-    this.updateWarnings(object);
+    const member = type => ({
+      id: type === 'beam' ? 'V-01' : 'C-01', type, ...DEFAULTS[type],
+      rebar: { ...DEFAULTS.rebar }, stirrup: { ...DEFAULTS.stirrup },
+    });
+    this.generateModel('joint', { beam: member('beam'), column: member('column') });
   }
   generateModel(type, parameters = {}) {
     const element = type === 'joint'
@@ -92,22 +92,34 @@ export class App {
     const fit = this.sceneManager.fitObject(object, this.cameraManager.controls);
     this.cameraManager.fit(fit.radius);
     this.selectionManager?.clear();
-    this.explodedManager?.reset();
+    this.explodedManager.active = false;
     this.xrayManager?.setMode(this.state.get('mode'), this.state.get('xrayOpacity'));
     const names = { beam: 'Viga rectangular', column: 'Columna rectangular', joint: 'Unión viga-columna' };
-    this.state.set({ mode: 'solid', modelName: names[type] || 'Modelo estructural', exploded: false });
+    this.model = { type, parameters: structuredClone(parameters) };
+    this.ui.parameterPanel.setModel(type, parameters);
+    this.state.set({ modelName: names[type] || 'Modelo estructural', exploded: false, visibility: {} });
     this.updateModelInfo(names[type] || 'Modelo estructural');
-    this.updateWarnings(object);
+    this.updateWarnings(this.sceneManager.modelRoot);
+    return true;
   }
   updateWarnings(root) {
     if (this.warningMarkers) {
-      root.remove(this.warningMarkers);
-      this.warningMarkers.traverse((object) => object.geometry?.dispose?.());
+      this.warningMarkers.removeFromParent();
+      this.warningMarkers.traverse((object) => { object.geometry?.dispose?.(); object.material?.dispose?.(); });
     }
     this.warningMarkers = new THREE.Group();
     this.warningMarkers.name = 'Marcadores de advertencia';
     root.add(this.warningMarkers);
     const thresholdMeters = Number(this.state.get('clearanceThreshold') ?? 25) * 0.001;
+    const moved = [];
+    root.traverse(object => {
+      const original = this.explodedManager.originalPositions.get(object);
+      if (original) {
+        moved.push([object, object.position.clone()]);
+        object.position.copy(original);
+      }
+    });
+    root.updateWorldMatrix(true, true);
     const collisions = new CollisionDetector({ minimumClearance: thresholdMeters }).detectObjectCollisions(
       (() => {
         const objects = [];
@@ -116,6 +128,8 @@ export class App {
       })(),
       thresholdMeters,
     );
+    moved.forEach(([object, position]) => object.position.copy(position));
+    root.updateWorldMatrix(true, true);
     collisions.forEach((collision) => {
       collision.objects.forEach((object) => {
         if (object.material && !Array.isArray(object.material)) {
@@ -142,13 +156,14 @@ export class App {
     if (collisions.length) {
       this.ui.setStatus(`${collisions.length} posible(s) interferencia(s) geométrica(s) detectada(s)`, 'warning');
     } else {
-      this.ui.setStatus('Sin interferencias geométricas cercanas detectadas');
+      this.ui.setStatus('Sin separaciones insuficientes entre barras longitudinales');
     }
   }
   clearModel() {
     this.selectionManager?.clear();
     this.sceneManager.clearModel();
-    this.state.set({ modelName: 'Sin modelo', selectedId: null });
+    this.model = null;
+    this.state.set({ modelName: 'Sin modelo', selectedId: null, exploded: false });
     this.updateModelInfo('Sin modelo');
     this.ui.setWarnings([], Number(this.state.get('clearanceThreshold') ?? 25), this.cameraInteraction);
   }
@@ -159,6 +174,7 @@ export class App {
       this.selectionManager.clear();
       this.sceneManager.clearModel();
       this.sceneManager.modelRoot.add(object);
+      this.model = null;
       const fit = this.sceneManager.fitObject(object, this.cameraManager.controls);
       this.cameraManager.fit(fit.radius);
       this.state.set({ modelName: object.name, selectedId: null, exploded: false });
@@ -180,7 +196,7 @@ export class App {
     this.cameraManager.controls.target.set(0, 0, 0);
   }
   exportJSON() {
-    const blob = new Blob([this.state.snapshot()], { type: 'application/json' });
+    const blob = new Blob([JSON.stringify({ app: 'VisorTécnico', version: 2, state: this.state.get(), model: this.model }, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
     anchor.href = url;
@@ -190,11 +206,41 @@ export class App {
   }
   async importJSONFile(file) {
     try {
-      this.state.restore(await file.text());
-      this.xrayManager?.setMode(this.state.get('mode'), this.state.get('xrayOpacity'));
-      this.explodedManager?.setExploded(this.state.get('exploded'), this.state.get('explodeAmount'));
-      this.lightingManager?.setPreset(this.state.get('lighting'));
-      this.visibilityManager?.applySaved();
+      const data = JSON.parse(await file.text());
+      if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('Formato inválido');
+      const saved = data.state ?? data;
+      if (!saved || typeof saved !== 'object' || Array.isArray(saved)) throw new Error('Estado inválido');
+      const allowed = {
+        mode: value => ['solid', 'xray', 'wireframe'].includes(value),
+        exploded: value => typeof value === 'boolean',
+        explodeAmount: value => Number.isFinite(value) && value >= 0 && value <= 100,
+        xrayOpacity: value => Number.isFinite(value) && value >= 5 && value <= 100,
+        clearanceThreshold: value => Number.isFinite(value) && value >= 0 && value <= 100,
+        lighting: value => ['Estudio', 'Exterior', 'Tenue'].includes(value),
+        cameraPreset: value => ['perspective', 'top', 'front', 'right'].includes(value),
+        visibility: value => value && typeof value === 'object' && !Array.isArray(value) && Object.values(value).every(item => typeof item === 'boolean'),
+      };
+      const settings = {};
+      for (const [key, valid] of Object.entries(allowed)) {
+        if (saved[key] !== undefined) {
+          if (!valid(saved[key])) throw new Error('Configuración inválida');
+          settings[key] = saved[key];
+        }
+      }
+      if (data.model != null) {
+        const { type, parameters } = data.model;
+        if (!['beam', 'column', 'joint'].includes(type) || !parameters || typeof parameters !== 'object') throw new Error('Modelo inválido');
+        const element = type === 'joint' ? { id: 'J-01', type: 'beam-column-joint', ...parameters } : parameters;
+        if (!validateInput(element).valid || (type !== 'joint' && parameters.type !== type)) throw new Error('Parámetros inválidos');
+        if (!this.generateModel(type, parameters)) throw new Error('No se pudo generar el modelo');
+      }
+      this.state.set(settings);
+      this.xrayManager.setMode(this.state.get('mode'), this.state.get('xrayOpacity'));
+      this.explodedManager.setExploded(this.state.get('exploded'), this.state.get('explodeAmount'));
+      this.lightingManager.setPreset(this.state.get('lighting'));
+      this.visibilityManager.applySaved();
+      this.cameraInteraction.animatePreset(this.state.get('cameraPreset'));
+      this.updateWarnings(this.sceneManager.modelRoot);
       this.ui.setStatus('Configuración restaurada');
     } catch (error) {
       this.ui.setStatus('JSON inválido', 'error');

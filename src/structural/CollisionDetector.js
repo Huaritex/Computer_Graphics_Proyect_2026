@@ -24,13 +24,14 @@ export function segmentDistance(a, b, c, d) {
   const dd = u.dot(w);
   const ee = v.dot(w);
   const den = aa * cc - bb * bb;
-  let sc, tc;
-  if (den < 1e-12) {
-    sc = 0;
-    tc = cc > 0 ? ee / cc : 0;
-  } else {
-    sc = THREE.MathUtils.clamp((bb * ee - cc * dd) / den, 0, 1);
-    tc = THREE.MathUtils.clamp((aa * ee - bb * dd) / den, 0, 1);
+  let sc = den > 1e-12 ? THREE.MathUtils.clamp((bb * ee - cc * dd) / den, 0, 1) : 0;
+  let tc = cc > 1e-12 ? (bb * sc + ee) / cc : 0;
+  if (tc < 0) {
+    tc = 0;
+    sc = aa > 1e-12 ? THREE.MathUtils.clamp(-dd / aa, 0, 1) : 0;
+  } else if (tc > 1) {
+    tc = 1;
+    sc = aa > 1e-12 ? THREE.MathUtils.clamp((bb - dd) / aa, 0, 1) : 0;
   }
   const p = a.clone().add(u.multiplyScalar(sc));
   const q = c.clone().add(v.multiplyScalar(tc));
@@ -73,12 +74,6 @@ export class CollisionDetector {
         const segmentA = this.getBarSegment(bars[i]);
         const segmentB = this.getBarSegment(bars[j]);
         if (!segmentA || !segmentB) continue;
-        const boxA = new THREE.Box3().setFromObject(bars[i]);
-        const boxB = new THREE.Box3().setFromObject(bars[j]);
-        if (!boxA.intersectsBox(boxB)) {
-          const expandedDistance = boxA.distanceToPoint(boxB.getCenter(new THREE.Vector3()));
-          if (expandedDistance > minimumClearance + 0.2) continue;
-        }
         const result = segmentDistance(segmentA.start, segmentA.end, segmentB.start, segmentB.end);
         const radiusA = bars[i].geometry.parameters?.radiusTop ?? bars[i].geometry.parameters?.radius ?? 0;
         const radiusB = bars[j].geometry.parameters?.radiusTop ?? bars[j].geometry.parameters?.radius ?? 0;

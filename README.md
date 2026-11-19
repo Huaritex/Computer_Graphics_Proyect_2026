@@ -19,11 +19,11 @@ npm run preview
 
 ## Estado del proyecto
 
-La escena principal actual es una plantilla Vite. Los módulos técnicos mínimos y las pruebas críticas están preparados, pero la integración completa de Three.js, GSAP, Raycaster y carga GLB aún no sustituye la plantilla ni constituye un modelo estructural certificado.
+El visor genera vigas, columnas y uniones parametrizadas con Three.js. Incluye selección, vistas de cámara, transparencia, despiece y comprobación de separación entre barras longitudinales. La geometría es una idealización académica.
 
 ## Recursos externos
 
-No se incluye ni se afirma la existencia de un GLB real. Coloque un recurso licenciado en `public/models/external/` o seleccione uno desde el cargador del futuro formulario. Véase [public/models/external/README.md](public/models/external/README.md).
+No se incluye ni se afirma la existencia de un GLB real. Coloque un recurso licenciado en `public/models/external/` o seleccione uno desde el cargador de la interfaz. Véase [public/models/external/README.md](public/models/external/README.md).
 
 ## Documentación
 

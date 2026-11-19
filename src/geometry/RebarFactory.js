@@ -37,10 +37,10 @@ export class RebarFactory {
     const topCount = data.rebar?.topCount ?? 3;
     const bottomCount = data.rebar?.bottomCount ?? 3;
     const cover = data.cover ?? 40;
-    const length = mmToScene(data.length);
+    const length = mmToScene(data.length - 2 * cover);
     const halfWidth = mmToScene(data.width) / 2;
     const halfDepth = mmToScene(data.depth) / 2;
-    const inset = mmToScene(cover + diameter / 2);
+    const inset = mmToScene(cover + (data.stirrup?.diameter ?? 10) + diameter / 2);
 
     for (const [layer, count, z] of [
       ['top', topCount, halfDepth - inset],
@@ -68,11 +68,11 @@ export class RebarFactory {
     const diameter = data.rebar?.diameter ?? data.rebar?.longitudinalDiameter ?? 16;
     const count = data.rebar?.longitudinalCount ?? 4;
     const cover = data.cover ?? 40;
-    const halfHeight = mmToScene(data.height) / 2;
+    const halfHeight = mmToScene(data.height - 2 * cover) / 2;
     const halfWidth = mmToScene(data.width) / 2;
     const halfDepth = mmToScene(data.depth) / 2;
-    const insetX = halfWidth - mmToScene(cover + diameter / 2);
-    const insetZ = halfDepth - mmToScene(cover + diameter / 2);
+    const insetX = halfWidth - mmToScene(cover + (data.stirrup?.diameter ?? 10) + diameter / 2);
+    const insetZ = halfDepth - mmToScene(cover + (data.stirrup?.diameter ?? 10) + diameter / 2);
     const corners = [
       [-insetX, -insetZ], [insetX, -insetZ],
       [insetX, insetZ], [-insetX, insetZ],

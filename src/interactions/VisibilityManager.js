@@ -10,7 +10,7 @@ export class VisibilityManager {
   hideSelected(selection) {
     if (!selection?.selected) return false;
     this.setVisible(selection.selected, false);
-    this.state.set('visibility', { ...this.state.get('visibility'), [selection.selected.userData.partId || selection.selected.uuid]: false });
+    this.state.set('visibility', { ...this.state.get('visibility'), [selection.selected.userData.entity?.id || selection.selected.userData.partId || selection.selected.uuid]: false });
     return true;
   }
   showAll() {
@@ -20,7 +20,7 @@ export class VisibilityManager {
   applySaved() {
     const visibility = this.state.get('visibility') || {};
     this.modelRoot.traverse((object) => {
-      const id = object.userData?.partId || object.uuid;
+      const id = object.userData?.entity?.id || object.userData?.partId || object.uuid;
       if (Object.hasOwn(visibility, id)) object.visible = visibility[id];
     });
   }

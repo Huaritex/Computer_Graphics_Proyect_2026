@@ -34,9 +34,11 @@ export class StirrupFactory {
         new THREE.Vector3(-halfW, 0, halfD),
       ];
     }
-    points.push(points[0].clone());
-    const curve = new THREE.CatmullRomCurve3(points, true, 'centripetal');
-    const geometry = new THREE.TubeGeometry(curve, 64, radius, 8, true);
+    const curve = new THREE.CurvePath();
+    for (let i = 0; i < points.length; i++) {
+      curve.add(new THREE.LineCurve3(points[i], points[(i + 1) % points.length]));
+    }
+    const geometry = new THREE.TubeGeometry(curve, 32, radius, 8, true);
     const mesh = new THREE.Mesh(geometry, this.material);
     mesh.position.copy(options.position || new THREE.Vector3());
     mesh.name = options.id || `${options.elementId || 'element'}-stirrup`;
@@ -55,12 +57,12 @@ export class StirrupFactory {
     const group = new THREE.Group();
     const diameter = data.stirrup?.diameter ?? 10;
     const spacing = data.stirrup?.spacing ?? 150;
-    const count = Math.max(1, Math.ceil(data.length / spacing));
+    const count = Math.max(1, Math.floor((data.length - 2 * (data.cover ?? 40) - diameter) / spacing) + 1);
     for (let i = 0; i < count; i++) {
-      const x = mmToScene(-data.length / 2 + i * spacing);
+      const x = mmToScene(-data.length / 2 + (data.cover ?? 40) + diameter / 2 + i * spacing);
       const stirrup = this.createRectangularStirrup({
-        width: data.width - 2 * (data.cover ?? 40),
-        depth: data.depth - 2 * (data.cover ?? 40),
+        width: data.width - 2 * (data.cover ?? 40) - diameter,
+        depth: data.depth - 2 * (data.cover ?? 40) - diameter,
         diameter,
         axis: 'x',
         position: new THREE.Vector3(x, 0, 0),
@@ -76,12 +78,12 @@ export class StirrupFactory {
     const group = new THREE.Group();
     const diameter = data.stirrup?.diameter ?? 10;
     const spacing = data.stirrup?.spacing ?? 150;
-    const count = Math.max(1, Math.ceil(data.height / spacing));
+    const count = Math.max(1, Math.floor((data.height - 2 * (data.cover ?? 40) - diameter) / spacing) + 1);
     for (let i = 0; i < count; i++) {
-      const y = mmToScene(-data.height / 2 + i * spacing);
+      const y = mmToScene(-data.height / 2 + (data.cover ?? 40) + diameter / 2 + i * spacing);
       const stirrup = this.createRectangularStirrup({
-        width: data.width - 2 * (data.cover ?? 40),
-        depth: data.depth - 2 * (data.cover ?? 40),
+        width: data.width - 2 * (data.cover ?? 40) - diameter,
+        depth: data.depth - 2 * (data.cover ?? 40) - diameter,
         diameter,
         axis: 'y',
         position: new THREE.Vector3(0, y, 0),

@@ -34,10 +34,18 @@ export class UIController {
     this.propertiesPanel.render(document.querySelector('#right-panel'));
     this.toolbar.render(document.querySelector('#scene-toolbar'));
     this.validationPanel.render(document.querySelector('#validation-panel'));
+    const media = matchMedia('(max-width: 760px)');
+    const updatePanelAccess = () => {
+      const panel = document.querySelector('#left-panel');
+      panel.inert = media.matches && !panel.classList.contains('mobile-open');
+    };
+    media.addEventListener('change', updatePanelAccess);
+    updatePanelAccess();
     document.querySelector('#mobile-panel-toggle')?.addEventListener('click', () => {
       const panel = document.querySelector('#left-panel');
       const button = document.querySelector('#mobile-panel-toggle');
       const open = panel?.classList.toggle('mobile-open');
+      updatePanelAccess();
       button?.setAttribute('aria-expanded', open ? 'true' : 'false');
       button?.setAttribute('aria-label', open ? 'Cerrar panel de parámetros' : 'Abrir panel de parámetros');
     });
@@ -58,6 +66,14 @@ export class UIController {
   openModelPicker() { document.querySelector('#model-file-input')?.click(); }
   openJSONPicker() { document.querySelector('#json-file-input')?.click(); }
   updateModel(modelRoot) { this.propertiesPanel.update(modelRoot); }
+  bindSelection(modelRoot, selectionManager) {
+    document.querySelector('#scene-tree')?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-node]');
+      if (!button) return;
+      const object = modelRoot.getObjectByProperty('uuid', button.dataset.node);
+      if (object) selectionManager.select(object);
+    });
+  }
   setStatus(text, kind) { this.validationPanel.setStatus(text, kind); }
   setModel(name, count) { this.validationPanel.setModel(name, count); }
   setWarnings(collisions, threshold, cameraInteraction) {
