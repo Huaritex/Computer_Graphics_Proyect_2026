@@ -1,0 +1,16 @@
+{
+  "id": "column-C1",
+  "type": "column",
+  "width": 400,
+  "depth": 400,
+  "height": 3000,
+  "cover": 40,
+  "rebar": {
+    "diameter": 16,
+    "longitudinalCount": 4
+  },
+  "stirrup": {
+    "diameter": 10,
+    "spacing": 150
+  }
+}

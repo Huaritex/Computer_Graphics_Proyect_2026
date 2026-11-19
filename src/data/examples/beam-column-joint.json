@@ -1,0 +1,20 @@
+{
+  "id": "joint-J1",
+  "type": "beam-column-joint",
+  "beam": {
+    "id": "beam-B1",
+    "type": "beam",
+    "width": 300,
+    "depth": 500,
+    "length": 4000,
+    "cover": 40
+  },
+  "column": {
+    "id": "column-C1",
+    "type": "column",
+    "width": 400,
+    "depth": 400,
+    "height": 3000,
+    "cover": 40
+  }
+}

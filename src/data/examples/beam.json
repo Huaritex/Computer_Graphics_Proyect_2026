@@ -1,0 +1,17 @@
+{
+  "id": "beam-B1",
+  "type": "beam",
+  "width": 300,
+  "depth": 500,
+  "length": 4000,
+  "cover": 40,
+  "rebar": {
+    "diameter": 16,
+    "topCount": 3,
+    "bottomCount": 3
+  },
+  "stirrup": {
+    "diameter": 10,
+    "spacing": 150
+  }
+}
