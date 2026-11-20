@@ -1,11 +1,14 @@
 import { chromium } from '@playwright/test';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { gzipSync } from 'node:zlib';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const bundlePath = process.argv[2];
 if (!bundlePath) throw new Error('Indica la ruta de spector.bundle.js');
 const bundle = await readFile(bundlePath, 'utf8');
-const output = new URL('./evidence/spector/', import.meta.url);
+const reportOutput = process.argv[3];
+const output = reportOutput ?? fileURLToPath(new URL('./evidence/spector/', import.meta.url));
 const baseURL = 'http://127.0.0.1:5173';
 const browser = await chromium.launch({
   channel: 'msedge',
@@ -45,6 +48,9 @@ try {
   const results = [];
   for (const [fileName, mode] of [['solido', 'solid'], ['xray', 'xray']]) {
     await page.locator(`[data-mode=${mode}]`).click();
+    await page.evaluate(() => new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    }));
     const { capture, scene } = await page.evaluate(() => new Promise((resolve, reject) => {
       const app = window.viewerApp;
       const canvas = app.rendererManager.renderer.domElement;
@@ -83,10 +89,17 @@ try {
       analyses: capture.analyses,
       piece: { id: piece.id, marker: piece.marker, name: piece.name, arguments: piece.commandArguments },
     });
-    await writeFile(new URL(`${fileName}.json.gz`, output), gzipSync(JSON.stringify(capture)));
+    await writeFile(join(output, `${fileName}.json.gz`), gzipSync(JSON.stringify(capture)));
+    if (reportOutput) {
+      await page.locator('#viewport canvas').screenshot({ path: join(output, `${fileName}.png`) });
+      const attachment = capture.endState.VisualState.Attachments.find(item => item.attachmentName === 'Canvas COLOR_ATTACHMENT');
+      const encoded = attachment?.src.match(/^data:image\/png;base64,(.+)$/)?.[1];
+      if (!encoded) throw new Error(`Falta la imagen capturada por Spector.js en ${fileName}`);
+      await writeFile(join(output, `${fileName}-fotograma.png`), Buffer.from(encoded, 'base64'));
+    }
   }
   const summary = JSON.stringify(results, null, 2);
-  await writeFile(new URL('resumen.json', output), summary + '\n');
+  await writeFile(join(output, 'resumen.json'), summary + '\n');
   console.log(summary);
 } finally {
   await browser.close();
